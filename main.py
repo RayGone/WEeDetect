@@ -127,4 +127,4 @@ clientside_callback(
 
 server = app.server
 if __name__ == "__main__":
-    app.run(debug=isDebug())
+    app.run(debug=isDebug(), host="0.0.0.0", port="8088")

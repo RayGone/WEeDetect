@@ -1,7 +1,7 @@
 [
     {
         "name": "EfficientNetV2S",
-        "description": "Model with EfficientNetV2S base and CBAM attention trained on DeepWeeds Dataset.",
+        "description": "Model with EfficientNetV2S base and CBAM attention - trained on DeepWeeds Dataset.",
         "source": "https://www.kaggle.com/code/reganmaharjan/deepweeds-efficientnet-attention-cbam/output",
         "source_description": "Kaggle Notebook",
         "author": "Regan Maharjan",

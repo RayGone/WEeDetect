@@ -4,7 +4,9 @@ import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 import dash
-from dash import dcc, html, Input, Output, State, clientside_callback
+from dash import dcc, html
+from dash import Input, Output, State 
+from dash import ctx, clientside_callback, MATCH, ALL
 import dash_bootstrap_components as dbc
 from plotly import express as px
 import pandas as pd
@@ -64,41 +66,80 @@ layout = dbc.Container([
                 html.Span(f"Upload Image of size less than {img_size_limit}MB", className='text-sm text-start d-block mb-2'),
             ]),
         ], class_name='mb-3'),
-        dcc.Upload(id='upload-data',
-            max_size=img_size_limit * 1024 * 1024,  # 5MB
-            accept='image/*',
-            children=html.Div([
-                dbc.Label('Drag and Drop or Select Files', style={"cursor":"pointer"}),
-            ]), 
-            className='w-100 text-center p-4 rounded-1 border-1',
-            style={
-                'lineHeight': '30px',
-                'borderStyle': 'dashed',
-            },
-            className_active='upload-dragdrop-active-bg'),
-        dbc.Row([
-            dbc.Col(
+        
+        dbc.ButtonGroup([
+            dbc.Button(id={"index":"toggle-btn", "value":"toggle-img-upload"}, children=html.I(className="fa fa-upload"), active=True),
+            dbc.Button(id={"index":"toggle-btn", "value":"toggle-img-capture"}, children=html.I(className="fa fa-camera"))
+        ], class_name="mb-2"),
+        
+        dbc.Row(
+            id={'type': "dw-output-container", "value": "img-upload"},
+            children = [
+                dbc.Col(
+                    dcc.Upload(id='upload-data',
+                        max_size=img_size_limit * 1024 * 1024,  # 5MB
+                        accept='image/*',
+                        children=html.Div([
+                            dbc.Label('Drag and Drop or Select Files', style={"cursor":"pointer"}),
+                        ]), 
+                        className='w-100 text-center p-4 rounded-1 border-1',
+                        style={
+                            'lineHeight': '30px',
+                            'borderStyle': 'dashed',
+                        },
+                        className_active='upload-dragdrop-active-bg'), sm=12),
+                dbc.Col(
+                    dbc.Card([
+                        # dbc.CardHeader(id='image-upload-name', className='text-start'),
+                        dbc.CardBody(
+                            html.Div(id='dw-output-image-upload', 
+                                    children=[
+                                        dbc.Label("No Image Uploaded!!", id='dw-output-img-label', class_name="card-title text-start"), 
+                                        html.Br(),
+                                        dbc.CardImg(id='dw-output-image-upload-display',class_name='d-none w-sm-100 w-50', bottom=True)], 
+                                    className='d-block w-100 text-center', style={"minHeight":"200px"}),
+                        ),
+                    ], class_name="w-100"),
+                    sm=12, md=8, className='text-center mt-3'),
+                dbc.Col(dbc.Card(
+                    dcc.Loading(dbc.CardBody(id={"type":"container", "value": 'dw-model-output-1'}, 
+                                            children=dbc.Label("Model Output:"), 
+                                            class_name="text-start"),
+                                type="circle")
+                    ), sm=12, md=4, className='text-center mt-3')   
+        ]),
+        dbc.Row(
+            id={'type': "dw-output-container", "value": "img-capture"},
+            children = [dbc.Col(
                 dbc.Card([
                     # dbc.CardHeader(id='image-upload-name', className='text-start'),
-                    dbc.CardBody(
-                        html.Div(id='dw-output-image-upload', 
-                                children=[
-                                    dbc.Label("No Image Uploaded!!", id='dw-output-img-label', class_name="card-title text-start"), 
-                                    html.Br(),
-                                    dbc.CardImg(id='dw-output-image-upload-display',class_name='d-none w-sm-100 w-50', bottom=True)], 
-                                className='d-block w-100 text-center', style={"minHeight":"200px"}),
-                    ),
+                    dbc.CardBody(id="dw-cam"),
+                    dcc.Store(id="img-capture-data"),
+                    dbc.CardFooter([dbc.Button("Capture", id="img-catpure-trigger")])
                 ], class_name="w-100"),
                 sm=12, md=8, className='text-center mt-3'),
-            dbc.Col(dbc.Card(
-                dcc.Loading(dbc.CardBody(id='dw-model-output-container', 
+            dbc.Col(dbc.Card([
+                dbc.CardImg(id="img-capture-display", class_name="w-25"),
+                dcc.Loading(dbc.CardBody(id={"type":"container", "value": 'dw-model-output-2'}, 
                                          children=dbc.Label("Model Output:"), 
                                          class_name="text-start"),
                             type="circle")
-                ), sm=12, md=4, className='text-center mt-3')   
-        ]),
+            ]), sm=12, md=4, className='text-center mt-3')   
+        ], class_name='d-none'),
        
     ], fluid=True)
+
+@dash.callback(
+    Output({"index":"toggle-btn", "value":ALL}, 'active'),
+    Output({'type': "dw-output-container", "value": ALL}, 'class_name'),
+    Input({"index":"toggle-btn", "value":ALL}, 'n_clicks'),
+    State({"index":"toggle-btn", "value":ALL}, 'id'),
+    prevent_initial_call=True,
+)
+def toggle_btn(n_clicks, ids):
+    active = [id['value'] == ctx.triggered_id['value'] for id in ids]
+    class_name = ["" if id['value'] == ctx.triggered_id['value'] else "d-none" for id in ids]
+    return active, class_name
 
 def read_upload_image(contents):
     # Decode the base64 string and convert to an image
@@ -137,16 +178,19 @@ def update_model_summary(model):
     return summary
 
 @dash.callback(
-    Output('dw-model-output-container', 'children'),
-    # Input('upload-data-store', 'data'),
+    Output({"type":"container", "value": 'dw-model-output-1'}, 'children'),
+    Output({"type":"container", "value": 'dw-model-output-2'}, 'children'),
     Input('upload-data', 'contents'),
-    State('upload-data', 'filename'),
+    Input('img-capture-data', 'data'),
     Input('dw-model-select', 'value'),
     prevent_initial_call=True,
 )
-def update_output( contents, filename, model):
-    print(f"\n\nUsing Model: {model} for prediction")
+def update_output(contents, capture, model):
+    if contents is None and capture is not None:
+        contents = capture['image']
+        
     if contents is not None: 
+        print(f"\n\nUsing Model: {model} for prediction")
         image = read_upload_image(contents)
         prediction = eval_model(image, model)[0]
         print(prediction)
@@ -164,10 +208,84 @@ def update_output( contents, filename, model):
                     for i in range(len(topK_prob))
                 ]]
         # [html.Div(dbc.Label("File Name: "+filename, class_name="card-title text-start"), className='text-start'), dbc.CardImg(src=contents, class_name='w-50', bottom=True)], 
-        return output
+        return output, output
         
-    return dash.no_update
+    return dash.no_update, dash.no_update
 
+
+clientside_callback(
+    """
+    (active) => {
+        const container = document.getElementById('dw-cam');
+        
+        const videoSrc = document.querySelector('video');
+        
+        if(videoSrc){
+            const mediaStream = videoSrc.srcObject;
+            if(mediaStream){
+                const tracks = mediaStream.getTracks();
+                tracks.forEach(track => track.stop());
+                videoSrc.srcObject = null;
+            }
+        }
+        
+        container.innerHTML = ''
+        
+        
+        const videoElement = document.createElement("video");
+        videoElement.setAttribute('autoplay', '');
+        videoElement.setAttribute('playsinline', '');
+        videoElement.className = "w-50"
+        if (active) {                
+            try {
+                container.appendChild(videoElement)
+                window.navigator.mediaDevices.getUserMedia({ video: true })
+                    .then((stream) =>{                        
+                        videoElement.srcObject = stream;
+                    });
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+            }
+            return window.dash_clientside.no_update
+        }
+        return ""
+    }
+    """,
+    Output('dw-cam', 'children'),
+    Input({"index":"toggle-btn", "value":'toggle-img-capture'}, 'active'),
+)
+
+clientside_callback(
+    """
+    (click) => {
+        const video = document.querySelector("video");
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+
+        const imageData = canvas.toDataURL('image/png');
+        return {"image": imageData}
+    }
+    """,
+    Output('img-capture-data', 'data'),
+    Input('img-catpure-trigger', 'n_clicks'),
+    prevent_initial_call=True
+)
+
+clientside_callback(
+    """
+    (data) => {
+        return data['image']
+    }
+    """,
+    Output('img-capture-display', 'src'),
+    Input('img-capture-data', 'data'),
+    prevent_initial_call=True
+)
+
+##===========================================
 
 clientside_callback(
     """
@@ -202,6 +320,7 @@ clientside_callback(
     """
     (contents) => {
         if (contents) {
+            console.log(contents)
             return contents;
         }
         

@@ -46,3 +46,8 @@
 html[data-bs-theme="dark"] .shadow-sm {
     box-shadow: 0 0.12rem 0.2rem rgba(161, 161, 161, 0.075) !important; /* your dark theme background */
 }
+
+.btn.active {
+    border-width: 2px;
+    border-color: rgb(152, 224, 255) !important;
+}
