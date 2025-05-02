@@ -110,12 +110,9 @@ def eval_model(image: Image.Image, model_name=None):
     if config['model_framework'] == 'PyTorch':
         image = tf.convert_to_tensor(image, dtype=tf.float32)  # Convert to tensor
     
-    if model_name == 'mobilenet':
-        return model.predict(image)
-    else:
-        image = np.array(image) / 255.0  # Normalize to [0, 1]
-        return model.predict(image, batch_size=1)
-
+    image = np.array(image) / 255.0  # Normalize to [0, 1]
+    return model.predict(image)
+    
 @dash.callback(
     Output('model-summary', 'children'),
     Input('dw-model-select', 'value'),
