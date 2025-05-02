@@ -4,7 +4,7 @@ import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 import dash
-from dash import dcc, html, Input, Output, State, callback
+from dash import dcc, html, Input, Output, State, clientside_callback
 import dash_bootstrap_components as dbc
 from plotly import express as px
 import pandas as pd
@@ -47,13 +47,14 @@ layout = dbc.Container([
                     ],
                     inline=True,
                     value=models[0]['name'].lower() if len(models) == 1 else [m['name'].lower() for m in models if m['isDefault']][0],
-                    className='text-start mb-2 d-flex flex-row align-items-center justify-content-start g-2',
+                    className='text-start mb-2 d-flex flex-row align-items-center justify-content-start g-2 overflow-auto',
                     labelClassName="me-2 form-check-label",
+                    inputClassName="form-check-input me-2",
                     persistence=True,
                 ),
                 html.Details(className='text-start mb-2', children=[
                     html.Summary("Model Description", className='text-start mb-2'),
-                    html.P(id='model-summary', className='text-sm d-block mb-2'),
+                    html.Div(id='model-summary', className='text-sm d-block mb-2'),
                 ]),
                 html.Div([
                     # html.Span("The model is trained on Kaggle and the notebook is available at: ", className='text-sm'),
@@ -79,11 +80,22 @@ layout = dbc.Container([
             dbc.Col(
                 dbc.Card([
                     # dbc.CardHeader(id='image-upload-name', className='text-start'),
-                    dbc.CardBody(dcc.Loading(html.Div(id='dw-output-image-upload', children=[dbc.Label("No Image Uploaded!!")], className='w-100 text-center', style={"minHeight":"200px"}), type="circle")),
+                    dbc.CardBody(
+                        html.Div(id='dw-output-image-upload', 
+                                children=[
+                                    dbc.Label("No Image Uploaded!!", id='dw-output-img-label', class_name="card-title text-start"), 
+                                    html.Br(),
+                                    dbc.CardImg(id='dw-output-image-upload-display',class_name='d-none w-sm-100 w-50', bottom=True)], 
+                                className='d-block w-100 text-center', style={"minHeight":"200px"}),
+                    ),
                 ], class_name="w-100"),
                 sm=12, md=8, className='text-center mt-3'),
             dbc.Col(dbc.Card(
-                dbc.CardBody(id='dw-model-output-container', children=dbc.Label("Model Output:"), class_name="text-start")),sm=12, md=4, className='text-center mt-3')
+                dcc.Loading(dbc.CardBody(id='dw-model-output-container', 
+                                         children=dbc.Label("Model Output:"), 
+                                         class_name="text-start"),
+                            type="circle")
+                ), sm=12, md=4, className='text-center mt-3')   
         ]),
        
     ], fluid=True)
@@ -125,7 +137,6 @@ def update_model_summary(model):
     return summary
 
 @dash.callback(
-    Output('dw-output-image-upload', 'children'),
     Output('dw-model-output-container', 'children'),
     # Input('upload-data-store', 'data'),
     Input('upload-data', 'contents'),
@@ -145,13 +156,58 @@ def update_output( contents, filename, model):
         
         output = [html.H4("Model Output: ", className='card-title font-weight-bold'), html.Hr(),
                 *[
-                    html.P([
+                    html.Div([
                         dbc.Label([html.B(f"Label: "), html.Span(f" {topK_class[i]}")], class_name="mb-1 w-100"),
                         dbc.Label([html.B("Probability: "), html.Span(f" {topK_prob[i]:.4f}")], class_name="mb-1 w-100"),
                         html.Br()
                     ], className="mb-2 border w-100 rounded-1 p-1")
                     for i in range(len(topK_prob))
                 ]]
-        return [html.Div(dbc.Label("File Name: "+filename, class_name="card-title text-start"), className='text-start'), dbc.CardImg(src=contents, class_name='w-50', bottom=True)], output
+        # [html.Div(dbc.Label("File Name: "+filename, class_name="card-title text-start"), className='text-start'), dbc.CardImg(src=contents, class_name='w-50', bottom=True)], 
+        return output
         
-    return dash.no_update, dash.no_update
+    return dash.no_update
+
+
+clientside_callback(
+    """
+    (filename) => {
+        if (filename) {
+            return "File Name: " + filename;
+        }
+        
+        return "No Image Uploaded!!";
+    }
+    """,
+    Output('dw-output-img-label', 'children'),
+    Input('upload-data', 'filename'),
+)
+
+clientside_callback(
+    """
+    (filename, img_class) => {
+        if (filename) {
+            return "card-img-top w-50 w-sm-50";
+        }
+        
+        return "d-none card-img-top w-50 w-sm-50";
+    }
+    """,
+    Output('dw-output-image-upload-display', 'class_name'),
+    Input('upload-data', 'filename'),
+    State('dw-output-image-upload-display', 'class_name'),
+)
+
+clientside_callback(
+    """
+    (contents) => {
+        if (contents) {
+            return contents;
+        }
+        
+        return '';
+    }
+    """,
+    Output('dw-output-image-upload-display', 'src'),
+    Input('upload-data', 'contents'),
+)
