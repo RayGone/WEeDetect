@@ -1,0 +1,48 @@
+[data-bs-theme="light"] {
+    --py-nav-link-active-bg : #b5e3fd88; /* your light theme active background */
+    --py-nav-link-hover-bg : #f8f8f8; /* your light theme active background */
+    --py-nav-link-active-hover-bg : #9edbff88; /* your light theme active background */
+    --bs-gradient: linear-gradient(180deg, rgba(40, 40, 40, 0.15), rgba(0, 0, 0, 0));   
+    --py-dropdown-hover-bg: #a1dff7;
+}
+
+[data-bs-theme='dark'] {
+    --bs-heading-color: #2fa4e7;
+    --py-nav-link-active-bg : #4f5a5f; 
+    --py-nav-link-hover-bg : #3E4145; 
+    --py-nav-link-active-hover-bg : #596a71; 
+    --py-dropdown-hover-bg: #385360;
+}
+
+.maplibregl-control-container {
+    display: none !important;
+}
+
+.flex-shrinkable {
+    min-width: 200px;
+    min-height: 200px;
+}
+
+.nav-pills .nav-link.active {
+    color: var(--bs-nav-link-color);
+    background-color: var(--py-nav-link-active-bg); 
+}
+
+.nav-pills .nav-link:hover {
+    color: var(--bs-nav-link-hover-color);
+    background-color: var(--py-nav-link-hover-bg);
+}
+
+.nav-pills .nav-link.active:hover{
+    color: var(--bs-nav-link-hover-color);
+    background-color: var(--py-nav-link-active-hover-bg); 
+}
+
+.upload-dragdrop-active-bg, .dropdown-item:hover {
+    background-color: var(--py-dropdown-hover-bg) !important;
+    color: black;
+}
+
+html[data-bs-theme="dark"] .shadow-sm {
+    box-shadow: 0 0.12rem 0.2rem rgba(161, 161, 161, 0.075) !important; /* your dark theme background */
+}
