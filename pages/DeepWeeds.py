@@ -23,7 +23,7 @@ import tensorflow as tf
 from models import load_model
 from utilities import getAvailableModels
 
-dash.register_page(__name__, path='/', name='DeepWeeds', title="Weeds Classification", description="Weeds Classification using Deep Learning")
+dash.register_page(__name__, path='/', name='WEeDetect - DeepWeeds', description="Weeds Classification using Deep Learning")
 
 models = getAvailableModels()
 deep_weeds_labels = {0: 'Chinee apple', 1: 'Lantana', 8: 'Negative',
@@ -158,10 +158,9 @@ def eval_model(image: Image.Image, model_name=None):
     # Step 3: Resize and normalize the image
     image = image.resize(config['input_shape'])  # Resize to match model input size
     
-    # image = np.transpose(image, (2, 0, 1))  # Change to (C, H, W) format
     image = np.expand_dims(image, axis=0)  # Add batch dimension
-    if config['model_framework'] == 'PyTorch':
-        image = tf.convert_to_tensor(image, dtype=tf.float32)  # Convert to tensor
+    # if config['model_framework'] == 'PyTorch':
+    #     image = tf.convert_to_tensor(image, dtype=tf.float32)  # Convert to tensor
     
     image = np.array(image) / 255.0  # Normalize to [0, 1]
     return model.predict(image)

@@ -1,7 +1,7 @@
 [
     {
         "name": "EfficientNetV2S",
-        "description": "Model with EfficientNetV2S base and CBAM attention - trained on DeepWeeds Dataset.",
+        "description": "EfficientNetV2S model uses Inverted CBAM attention [with Multi-Filter Spatial Attention] and Global Average of Maximums",
         "source": "https://www.kaggle.com/code/reganmaharjan/deepweeds-efficientnet-attention-cbam/output",
         "source_description": "Kaggle Notebook",
         "author": "Regan Maharjan",
@@ -9,6 +9,20 @@
         "input_shape": [256, 256],
         "output_shape": [1, 9],
         "path": "models/DeepWeeds-EfficientNet-CBAM.keras",
+        "model_framework": "TensorFlow",
+        "model_framework_version": "2.15.0",
+        "isDefault": false
+    },
+    {
+        "name": "MobileNetV3S",
+        "description": "MobileNetV3S model uses Inverted CBAM attention [with Multi-Filter Spatial Attention] and Global Average of Maximums",
+        "source": "https://www.kaggle.com/code/reganmaharjan/deepweeds-mobilenetv3small-cbam-mfsa/output?scriptVersionId=237852507",
+        "source_description": "Kaggle Notebook",
+        "author": "Regan Maharjan",
+        "type": "image-classification",
+        "input_shape": [224, 224],
+        "output_shape": [1, 9],
+        "path": "models/DeepWeeds-MobilenetV3small_base_InvCBAM_MFSA.keras",
         "model_framework": "TensorFlow",
         "model_framework_version": "2.15.0",
         "isDefault": true

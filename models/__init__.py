@@ -1,4 +1,5 @@
 from .efficientnet_model_builder import get_pretrained_model as get_pretrained_model_efficientnet
+from .mobilenetv3s_model_builder import get_pretrained_model as get_pretrained_model_mobilenet
 import os
 
 import tensorflow as tf
@@ -31,7 +32,13 @@ seedEverything(seed)
 
 def load_model(name):
     configs = getAvailableModels()
-    if name == 'efficientnetv2s':
+    if name == 'mobilenetv3s':
+        config = [c for c in configs if c['name'].lower() == name][0]
+        model = get_pretrained_model_mobilenet(os.path.join(os.getenv('dash_app_root'), config['path']))
+    else:
+        # if name == 'efficientnetv2s':
         config = [c for c in configs if c['name'].lower() == name][0]
         model = get_pretrained_model_efficientnet(os.path.join(os.getenv('dash_app_root'), config['path']))
+    
+        
     return model
