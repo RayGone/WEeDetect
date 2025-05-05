@@ -192,10 +192,9 @@ def update_output(contents, capture, model):
         print(f"\n\nUsing Model: {model} for prediction")
         image = read_upload_image(contents)
         prediction = eval_model(image, model)[0]
-        print(prediction)
-        idx = np.argmax(prediction)
-        topK_prob = [prediction[idx]]
-        topK_class = [deep_weeds_labels[idx]]
+        top_k = tf.math.top_k(prediction, 2)
+        topK_prob = list(top_k.values.numpy())
+        topK_class = [deep_weeds_labels[idx] for idx in top_k.indices.numpy()]
         
         output = [html.H4("Model Output: ", className='card-title font-weight-bold'), html.Hr(),
                 *[
