@@ -15,7 +15,7 @@
     },
     {
         "name": "MobileNetV3S",
-        "description": "MobileNetV3S model uses Inverted CBAM attention [with Multi-Filter Spatial Attention] and Global Average of Maximums",
+        "description": "MobileNetV3S model uses CBAM attention [with Multi-Filter Spatial Attention] and Global Average of Maximums",
         "source": "https://www.kaggle.com/code/reganmaharjan/deepweeds-mobilenetv3small-cbam-mfsa/output?scriptVersionId=237852507",
         "source_description": "Kaggle Notebook",
         "author": "Regan Maharjan",
