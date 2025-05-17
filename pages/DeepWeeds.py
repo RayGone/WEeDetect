@@ -3,6 +3,8 @@ sys.path.append('../models')
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
+import time
+
 import dash
 from dash import dcc, html
 from dash import Input, Output, State 
@@ -37,9 +39,12 @@ img_size_limit = int(os.getenv("IMG_SIZE_LIMIT", 5))
 layout = dbc.Container([
         dbc.Row([            
             dbc.Col(width=12, children=[
+                # dbc.Label([
+                #     html.B("The model is trained using deepweeds dataset. Thus it classifies the weed image to one of "),
+                #     html.Span(str(deep_weeds_labels_name)+".", className='text-sm d-block mb-2'),
+                # ], className='text-start mb-2 text-xs'),
                 dbc.Label([
-                    html.B("The model is trained using deepweeds dataset. Thus it classifies the weed image to one of "),
-                    html.Span(str(deep_weeds_labels_name)+".", className='text-sm d-block mb-2'),
+                    html.B("Choose DL mode")
                 ], className='text-start mb-2 text-xs'),
                 dcc.RadioItems(
                     id='dw-model-select',
@@ -62,7 +67,7 @@ layout = dbc.Container([
                     # html.Span("The model is trained on Kaggle and the notebook is available at: ", className='text-sm'),
                     # html.A("reganmaharjan/deepweeds-mobilenetv1/notebook",href="www.kaggle.com/code/reganmaharjan/deepweeds-mobilenetv1/notebook", target="_blank", title='Check Kaggle Notebook', className="text-sm", style={"cursor": "pointer"}),
                 ]), html.Br(),
-                html.H4("Upload an weed image to classify it using a pre-trained model.", className="text-center"),
+                html.H4("Upload weed images to classify.", className="text-start"),
                 html.Span(f"Upload Image of size less than {img_size_limit}MB", className='text-sm text-start d-block mb-2'),
             ]),
         ], class_name='mb-3'),
@@ -73,12 +78,13 @@ layout = dbc.Container([
         ], class_name="mb-2"),
         
         dbc.Row(
-            id={'type': "dw-output-container", "value": "img-upload"},
+            id={'type': "dw-output-container", "id": "img-upload"},
             children = [
                 dbc.Col(
                     dcc.Upload(id='upload-data',
                         max_size=img_size_limit * 1024 * 1024,  # 5MB
                         accept='image/*',
+                        multiple=True,
                         children=html.Div([
                             dbc.Label('Drag and Drop or Select Files', style={"cursor":"pointer"}),
                         ]), 
@@ -89,27 +95,24 @@ layout = dbc.Container([
                         },
                         className_active='upload-dragdrop-active-bg'), sm=12),
                 dbc.Col(
-                    dbc.Card([
-                        # dbc.CardHeader(id='image-upload-name', className='text-start'),
-                        dbc.CardBody(
-                            html.Div(id='dw-output-image-upload', 
-                                    children=[
-                                        dbc.Label("No Image Uploaded!!", id='dw-output-img-label', class_name="card-title text-start"), 
-                                        html.Br(),
-                                        dbc.CardImg(id='dw-output-image-upload-display',class_name='d-none w-sm-100 w-50', bottom=True)], 
-                                    className='d-block w-100 text-center', style={"minHeight":"200px"}),
-                        ),
-                    ], class_name="w-100"),
-                    sm=12, md=8, className='text-center mt-3'),
-                dbc.Col(dbc.Card(
-                    dcc.Loading(dbc.CardBody(id={"type":"container", "value": 'dw-model-output-1'}, 
-                                            children=dbc.Label("Model Output:"), 
-                                            class_name="text-start"),
-                                type="circle")
-                    ), sm=12, md=4, className='text-center mt-3')   
-        ]),
+                    id='dw-output-display-container',
+                    children=[
+                        dbc.Card([
+                            # dbc.CardHeader(id='image-upload-name', className='text-start'),
+                            dbc.CardBody(
+                                html.Div(id='dw-output-image-upload', 
+                                        children=[
+                                            dbc.Label("No Image Uploaded!!", id='dw-output-img-label', class_name="card-title text-start"), 
+                                            html.Br(),
+                                            dbc.CardImg(id='dw-output-image-upload-display',class_name='d-none w-sm-100 w-50', bottom=True)], 
+                                        className='d-block w-100 text-center', style={"minHeight":"200px"}),
+                            ),
+                        ], class_name="w-100")
+                    ], sm=12, class_name='text-center mt-3 w-100 d-flex flex-wrap pb-2')
+        ], class_name='d-block'),
+        
         dbc.Row(
-            id={'type': "dw-output-container", "value": "img-capture"},
+            id={'type': "dw-output-container", "id": "img-capture"},
             children = [dbc.Col(
                 dbc.Card([
                     # dbc.CardHeader(id='image-upload-name', className='text-start'),
@@ -120,7 +123,7 @@ layout = dbc.Container([
                 sm=12, md=8, className='text-center mt-3'),
             dbc.Col(dbc.Card([
                 dbc.CardImg(id="img-capture-display", class_name="w-25"),
-                dcc.Loading(dbc.CardBody(id={"type":"container", "value": 'dw-model-output-2'}, 
+                dcc.Loading(dbc.CardBody(id={"type":"container", "for": 'cam'}, 
                                          children=dbc.Label("Model Output:"), 
                                          class_name="text-start"),
                             type="circle")
@@ -131,7 +134,7 @@ layout = dbc.Container([
 
 @dash.callback(
     Output({"index":"toggle-btn", "value":ALL}, 'active'),
-    Output({'type': "dw-output-container", "value": ALL}, 'class_name'),
+    Output({'type': "dw-output-container", "id": ALL}, 'class_name'),
     Input({"index":"toggle-btn", "value":ALL}, 'n_clicks'),
     State({"index":"toggle-btn", "value":ALL}, 'id'),
     prevent_initial_call=True,
@@ -139,32 +142,10 @@ layout = dbc.Container([
 def toggle_btn(n_clicks, ids):
     active = [id['value'] == ctx.triggered_id['value'] for id in ids]
     class_name = ["" if id['value'] == ctx.triggered_id['value'] else "d-none" for id in ids]
+    
     return active, class_name
+    # return tuple(active), tuple(class_name)
 
-def read_upload_image(contents):
-    # Decode the base64 string and convert to an image
-    header, encoded = contents.split(",", 1)  # Splits into "data:image/png;base64" and the base64 string
-    image_data = base64.b64decode(encoded)
-    
-    # Convert to an Image object
-    image = Image.open(BytesIO(image_data))
-    image = image.convert('RGB')  # Ensure image is in RGB format
-    return image
-
-def eval_model(image: Image.Image, model_name=None):  
-    config = [m for m in models if m['name'].lower() == model_name][0]
-    model = load_model(model_name)
-    
-    # Step 3: Resize and normalize the image
-    image = image.resize(config['input_shape'])  # Resize to match model input size
-    
-    image = np.expand_dims(image, axis=0)  # Add batch dimension
-    # if config['model_framework'] == 'PyTorch':
-    #     image = tf.convert_to_tensor(image, dtype=tf.float32)  # Convert to tensor
-    
-    image = np.array(image) / 255.0  # Normalize to [0, 1]
-    return model.predict(image)
-    
 @dash.callback(
     Output('model-summary', 'children'),
     Input('dw-model-select', 'value'),
@@ -176,40 +157,120 @@ def update_model_summary(model):
     
     return summary
 
+##===============
+def read_upload_image(contents):
+    # Decode the base64 string and convert to an image
+    header, encoded = contents.split(",", 1)  # Splits into "data:image/png;base64" and the base64 string
+    image_data = base64.b64decode(encoded)
+    
+    # Convert to an Image object
+    image = Image.open(BytesIO(image_data))
+    image = image.convert('RGB')  # Ensure image is in RGB format
+    return image
+
+def preprocess(images, model):
+    config = [m for m in models if m['name'].lower() == model][0]
+    images = [image.resize(config['input_shape']) for image in images]  # Resize to match model input size
+    return np.array(images) / 255.0 # Normalize 0 and 1
+
+def eval_model(image, model_name=None):  
+    model = load_model(model_name)
+    return model.predict(image, batch_size=image.shape[0])
+
+##=========================
+##-
 @dash.callback(
-    Output({"type":"container", "value": 'dw-model-output-1'}, 'children'),
-    Output({"type":"container", "value": 'dw-model-output-2'}, 'children'),
-    Input('upload-data', 'contents'),
-    Input('img-capture-data', 'data'),
+    Output('dw-output-display-container', 'children'),
+    Input('upload-data', 'filename'),
+    Input('upload-data', 'contents')
+)
+def display_uploaded_images(filenames, contents):
+    if not filenames:
+        return dash.no_update
+    
+    children = []
+    id = 0
+    for name in filenames:
+        child = dbc.Card([
+                        dbc.CardHeader(name, id={'id':id, 'type': 'filename', "for":"upload"}, class_name='text-start text-nowrap', style={"fontSize":"0.8em"}),
+                        dbc.CardImg(id={'id':id, 'type': 'image', "for":"upload"}, style={"maxWidth":"250px", "height":"150px"}, top=True, src=contents[id]),
+                        dbc.CardBody(id={'id':id, "type":"container", "for":"upload"}, 
+                            children=[dbc.Label("Model Output:"), html.Br(), html.I(className="fa fa-spinner fa-pulse text-primary", style={"fontSize": "24px"})], 
+                            class_name="text-start", style={"font-size":'0.8em'}),                        
+                    ], style={"width": "250px", "minHeight":"300px"}, class_name="p-2 m-1")
+        children.append(child)
+        id+=1
+    return children
+
+@dash.callback(
+    Output({'id': ALL, "type":"container", "for":"upload"}, 'children', allow_duplicate=True),
+    Input('dw-output-display-container', 'children'),
+    State('upload-data', 'contents'),
     Input('dw-model-select', 'value'),
     prevent_initial_call=True,
 )
-def update_output(contents, capture, model):
-    if contents is None and capture is not None:
-        contents = capture['image']
-        
-    if contents is not None: 
-        print(f"\n\nUsing Model: {model} for prediction")
-        image = read_upload_image(contents)
-        prediction = eval_model(image, model)[0]
-        top_k = tf.math.top_k(prediction, 2)
-        topK_prob = list(top_k.values.numpy())
-        topK_class = [deep_weeds_labels[idx] for idx in top_k.indices.numpy()]
-        
-        output = [html.H4("Model Output: ", className='card-title font-weight-bold'), html.Hr(),
+def make_prediction_on_upload(_, contents, selected_model_name):
+    time.sleep(1)
+    if contents is not None:
+        print("\nUpload Mode")
+        print(f"Using Model: {selected_model_name} for prediction")
+        images = [read_upload_image(content) for content in contents]
+        images = preprocess(images, selected_model_name)
+        prediction = eval_model(images, selected_model_name)
+        outputs = []
+        for p in prediction:
+            top_k = tf.math.top_k(p, 2)
+            topK_prob = list(top_k.values.numpy())
+            topK_class = [deep_weeds_labels[idx] for idx in top_k.indices.numpy()]
+            
+            output = [html.H4("Model Output: ", className='card-title font-weight-bold', style={"fontSize":"1em"}), html.Hr(),
                 *[
                     html.Div([
-                        dbc.Label([html.B(f"Label: "), html.Span(f" {topK_class[i]}")], class_name="mb-1 w-100"),
-                        dbc.Label([html.B("Probability: "), html.Span(f" {topK_prob[i]:.4f}")], class_name="mb-1 w-100"),
+                        dbc.Label([html.B(f"Label: "), html.Span(f" {topK_class[i]}")], class_name="mb-1 w-100", style={"fontSize":"0.9em"}),
+                        dbc.Label([html.B("Probability: "), html.Span(f" {topK_prob[i]:.4f}")], class_name="mb-1 w-100", style={"fontSize":"0.9em"}),
                         html.Br()
                     ], className="mb-2 border w-100 rounded-1 p-1")
                     for i in range(len(topK_prob))
                 ]]
-        # [html.Div(dbc.Label("File Name: "+filename, class_name="card-title text-start"), className='text-start'), dbc.CardImg(src=contents, class_name='w-50', bottom=True)], 
-        return output, output
+            outputs.append(output)
+            
+        return outputs
+    
+    return dash.no_update
         
-    return dash.no_update, dash.no_update
 
+@dash.callback(
+    Output({"type":"container", "for":"cam"}, 'children', allow_duplicate=True),
+    Input('img-capture-data', 'data'),
+    Input('dw-model-select', 'value'),
+    prevent_initial_call=True,
+)
+def make_prediction_on_cam_capture(capture, model):
+    if capture is None or model is None:
+        return dash.no_update
+    
+    contents = capture['image']
+    
+    print("\nCamera Mode") 
+    print(f"Using Model: {model} for prediction")
+    image = read_upload_image(contents)
+    image = preprocess([image], model)
+    prediction = eval_model(image, model)[0]
+    top_k = tf.math.top_k(prediction, 2)
+    topK_prob = list(top_k.values.numpy())
+    topK_class = [deep_weeds_labels[idx] for idx in top_k.indices.numpy()]
+    
+    output = [html.H4("Model Output: ", className='card-title font-weight-bold'), html.Hr(),
+            *[
+                html.Div([
+                    dbc.Label([html.B(f"Label: "), html.Span(f" {topK_class[i]}")], class_name="mb-1 w-100"),
+                    dbc.Label([html.B("Probability: "), html.Span(f" {topK_prob[i]:.4f}")], class_name="mb-1 w-100"),
+                    html.Br()
+                ], className="mb-2 border w-100 rounded-1 p-1")
+                for i in range(len(topK_prob))
+            ]]
+    # [html.Div(dbc.Label("File Name: "+filename, class_name="card-title text-start"), className='text-start'), dbc.CardImg(src=contents, class_name='w-50', bottom=True)], 
+    return output
 
 clientside_callback(
     """
@@ -285,46 +346,46 @@ clientside_callback(
 
 ##===========================================
 
-clientside_callback(
-    """
-    (filename) => {
-        if (filename) {
-            return "File Name: " + filename;
-        }
+# clientside_callback(
+#     """
+#     (filename) => {
+#         if (filename) {
+#             return "File Name: " + filename;
+#         }
         
-        return "No Image Uploaded!!";
-    }
-    """,
-    Output('dw-output-img-label', 'children'),
-    Input('upload-data', 'filename'),
-)
+#         return "No Image Uploaded!!";
+#     }
+#     """,
+#     Output('dw-output-img-label', 'children'),
+#     Input('upload-data', 'filename'),
+# )
 
-clientside_callback(
-    """
-    (filename, img_class) => {
-        if (filename) {
-            return "card-img-top w-50 w-sm-50";
-        }
+# clientside_callback(
+#     """
+#     (filename, img_class) => {
+#         if (filename) {
+#             return "card-img-top w-50 w-sm-50";
+#         }
         
-        return "d-none card-img-top w-50 w-sm-50";
-    }
-    """,
-    Output('dw-output-image-upload-display', 'class_name'),
-    Input('upload-data', 'filename'),
-    State('dw-output-image-upload-display', 'class_name'),
-)
+#         return "d-none card-img-top w-50 w-sm-50";
+#     }
+#     """,
+#     Output('dw-output-image-upload-display', 'class_name'),
+#     Input('upload-data', 'filename'),
+#     State('dw-output-image-upload-display', 'class_name'),
+# )
 
-clientside_callback(
-    """
-    (contents) => {
-        if (contents) {
-            console.log(contents)
-            return contents;
-        }
+# clientside_callback(
+#     """
+#     (contents) => {
+#         if (contents) {
+#             console.log(contents)
+#             return contents;
+#         }
         
-        return '';
-    }
-    """,
-    Output('dw-output-image-upload-display', 'src'),
-    Input('upload-data', 'contents'),
-)
+#         return '';
+#     }
+#     """,
+#     Output('dw-output-image-upload-display', 'src'),
+#     Input('upload-data', 'contents'),
+# )
