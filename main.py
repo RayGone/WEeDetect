@@ -35,7 +35,7 @@ dbc_css = ("https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates@V1.0.
 app = dash.Dash(
     __name__,
     external_stylesheets=[base, theme, dbc.icons.FONT_AWESOME, dbc_css],
-    title="WEeDetect App",
+    title="DeepWeeds App",
     use_pages=True,
     suppress_callback_exceptions=True,
 )
@@ -64,9 +64,9 @@ app.layout = dbc.Container([
                         id='nav-menu',
                     ),
                 ] ,xs=2, lg=3),
-            dbc.Col(html.H2("WEeDetect App",id="header-title", className='display-4 text-center pt-2 pb-2'), xs=10, md=6),
+            dbc.Col(html.H2("Deepweeds App",id="header-title", className='display-4 text-center pt-2 pb-2'), xs=10, md=6),
             dbc.Col(html.Div([
-                    html.A(href="https://github.com/RayGone/WEeDetect", target="_blank", title='Check Github', className='fa-brands fa-github me-3', style={"fontSize":"20px", "cursor": "pointer"}),
+                    html.A(href="https://github.com/RayGone/DeepWeeds_App", target="_blank", title='Check Github', className='fa-brands fa-github me-3', style={"fontSize":"20px", "cursor": "pointer"}),
                     dbc.Label(class_name="fa fa-moon pe-2", html_for="switch", style={"color":"silver", "textShadow":"1px 0 2px black"}),
                     dbc.Switch(id="switch", value=True, class_name="d-inline-block", persistence=True),
                     dbc.Label(class_name="fa fa-sun", html_for="switch", style={"color":"#EABF14", "textShadow":"1px 1px 2px #aaa, 0 0 2px #EABF14"})

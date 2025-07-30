@@ -25,7 +25,7 @@ import tensorflow as tf
 from models import load_model
 from utilities import getAvailableModels
 
-dash.register_page(__name__, path='/', name='WEeDetect - DeepWeeds', description="Weeds Classification using Deep Learning")
+dash.register_page(__name__, path='/', name='DeepWeeds App', description="Weeds Classification using Deep Learning")
 
 models = getAvailableModels()
 deep_weeds_labels = {0: 'Chinee apple', 1: 'Lantana', 8: 'Negative',
@@ -175,7 +175,7 @@ def preprocess(images, model):
 
 def eval_model(image, model_name=None):  
     model = load_model(model_name)
-    return model.predict(image, batch_size=image.shape[0])
+    return model(image)
 
 ##=========================
 ##-
@@ -194,10 +194,14 @@ def display_uploaded_images(filenames, contents):
         child = dbc.Card([
                         dbc.CardHeader(name, id={'id':id, 'type': 'filename', "for":"upload"}, class_name='text-start text-nowrap', style={"fontSize":"0.8em"}),
                         dbc.CardImg(id={'id':id, 'type': 'image', "for":"upload"}, style={"maxWidth":"250px", "height":"150px"}, top=True, src=contents[id]),
-                        dbc.CardBody(id={'id':id, "type":"container", "for":"upload"}, 
-                            children=[dbc.Label("Model Output:"), html.Br(), html.I(className="fa fa-spinner fa-pulse text-primary", style={"fontSize": "24px"})], 
-                            class_name="text-start", style={"font-size":'0.8em'}),                        
-                    ], style={"width": "250px", "minHeight":"300px"}, class_name="p-2 m-1")
+                        dcc.Loading(
+                            dbc.CardBody(id={'id':id, "type":"container", "for":"upload"}, 
+                                children=[dbc.Label("Model Output:"), html.Br(), html.I(className="fa fa-spinner fa-pulse text-primary", style={"fontSize": "24px"})], 
+                                class_name="text-start", style={"font-size":'0.8em'}),
+                            type='circle',
+                            show_initially=True
+                        ),                        
+                    ], style={"minWidth": "250px", "minHeight":"300px"}, class_name="p-2 m-1")
         children.append(child)
         id+=1
     return children
@@ -217,6 +221,7 @@ def make_prediction_on_upload(_, contents, selected_model_name):
         images = [read_upload_image(content) for content in contents]
         images = preprocess(images, selected_model_name)
         prediction = eval_model(images, selected_model_name)
+        print("Predictions", prediction)
         outputs = []
         for p in prediction:
             top_k = tf.math.top_k(p, 2)
@@ -260,7 +265,7 @@ def make_prediction_on_cam_capture(capture, model):
     topK_prob = list(top_k.values.numpy())
     topK_class = [deep_weeds_labels[idx] for idx in top_k.indices.numpy()]
     
-    output = [html.H4("Model Output: ", className='card-title font-weight-bold'), html.Hr(),
+    output = [html.H4("Model Top-2 Output: ", className='card-title font-weight-bold'), html.Hr(),
             *[
                 html.Div([
                     dbc.Label([html.B(f"Label: "), html.Span(f" {topK_class[i]}")], class_name="mb-1 w-100"),
@@ -345,21 +350,6 @@ clientside_callback(
 )
 
 ##===========================================
-
-# clientside_callback(
-#     """
-#     (filename) => {
-#         if (filename) {
-#             return "File Name: " + filename;
-#         }
-        
-#         return "No Image Uploaded!!";
-#     }
-#     """,
-#     Output('dw-output-img-label', 'children'),
-#     Input('upload-data', 'filename'),
-# )
-
 # clientside_callback(
 #     """
 #     (filename, img_class) => {
