@@ -1,5 +1,3 @@
-from .efficientnet_model_builder import get_pretrained_model as get_pretrained_model_efficientnet
-from .mobilenetv3s_model_builder import get_pretrained_model as get_pretrained_model_mobilenet
 import os
 
 import tensorflow as tf
@@ -7,6 +5,7 @@ import numpy as np
 import os
 import random
 from utilities import getAvailableModels
+from models.efficientnet import buildModel
 
 seed = 999
 
@@ -32,13 +31,9 @@ seedEverything(seed)
 
 def load_model(name):
     configs = getAvailableModels()
-    if name == 'mobilenetv3s':
-        config = [c for c in configs if c['name'].lower() == name][0]
-        model = get_pretrained_model_mobilenet(os.path.join(os.getenv('dash_app_root'), config['path']))
-    else:
-        # if name == 'efficientnetv2s':
-        config = [c for c in configs if c['name'].lower() == name][0]
-        model = get_pretrained_model_efficientnet(os.path.join(os.getenv('dash_app_root'), config['path']))
-    
-        
+    selected_model_config = [c for c in configs if c['name'].lower() == name][0]
+    path = os.path.join(os.getcwd(), 'models', selected_model_config['weight_filename'])
+    model = buildModel()
+    print("loading weights from: ", path)
+    model.load_weights(path, skip_mismatch=True)
     return model
